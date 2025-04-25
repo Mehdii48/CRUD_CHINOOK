@@ -1,0 +1,137 @@
+# Mehdi Bedhri
+# 04/04/2025
+# Exercici RA6
+
+import psycopg
+
+# Conexión a la base de datos
+def connect_db():
+    connection = """
+        dbname=chinook_v2
+        user=postgres
+        password=Salim2001
+        host=localhost
+        port=5432
+    """
+    return psycopg.connect(connection)
+
+# Consultar todos los artistas
+def consultar_todos_artistas(conn):
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM artist")
+    registros = cur.fetchall()
+    if registros:
+        for artista in registros:
+            print("ID:", artista[0], ", NOMBRE:", artista[1])
+    else:
+        print("No hay resultados para esta consulta")
+
+# Consultar artistas por nombre
+def consultar_artistas_por_nombre(conn):
+    nombre = input("Introduce el nombre del artista: ")
+    if len(nombre) < 2:
+        print("Has de introducir al menos 2 caracteres")
+    else:
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM artist WHERE name ILIKE %s", ('%' + nombre + '%',))
+        resultados = cur.fetchall()
+        if resultados:
+            for artista in resultados:
+                print("ID:", artista[0], ", NOMBRE:", artista[1])
+        else:
+            print("No hay resultados para esta consulta")
+
+# Consultar los 5 primeros álbumes por nombre del artista
+def consultar_albumes_por_artista(conn):
+    nombre = input("Introduce el nombre del artista: ")
+    if len(nombre) < 2:
+        print("Has de introducir al menos 2 caracteres")
+    else:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT album.album_id, album.title, artist.name
+            FROM album
+            JOIN artist ON album.artist_id = artist.artist_id
+            WHERE artist.Name ILIKE %s
+            ORDER BY album.album_id ASC
+            LIMIT 5
+        """, (nombre + '%',))
+        resultados = cur.fetchall()
+        if resultados:
+            for album in resultados:
+                print("ID_ALBUM:", album[0], ", NOMBRE_ALBUM:", album[1], ", NOMBRE_ARTISTA:", album[2])
+        else:
+            print("No hay resultados para esta consulta")
+
+# Añadir un nuevo artista
+def afegir_artista(conn):
+    nombre = input("Introduce el nombre del nuevo artista: ")
+    if len(nombre) < 2:
+        print("Has de introducir al menos 3 caracteres")
+    else:
+        cur = conn.cursor()
+        cur.execute("INSERT INTO artist (name) VALUES (%s) RETURNING artist_id", (nombre,))
+        new_id = cur.fetchone()[0]
+        conn.commit()
+        print(f"El artista se ha añadido correctamente con ID {new_id}")
+
+# Modificar el nombre de un artista
+def modificar_artista(conn):
+    id = input("Introduce la ID del artista que deseas modificar: ")
+    nuevo_nombre = input("Introduce el nuevo nombre: ")
+    if len(nuevo_nombre) < 2:
+        print("Has de introducir al menos 3 caracteres")
+    else:
+        cur = conn.cursor()
+        cur.execute("UPDATE artist SET Name = %s WHERE ArtistId = %s", (nuevo_nombre, id))
+        conn.commit()
+        print("El artista se ha modificado correctamente")
+
+# Borrar un artista
+def borrar_artista(conn):
+    id = input("Introduce la ID del artista que deseas eliminar: ")
+    cur = conn.cursor()
+    cur.execute("DELETE FROM artist WHERE ArtistId = %s", (id,))
+    conn.commit()
+    print("El artista se ha borrado correctamente")
+
+# Menú principal
+def menu():
+    conn = connect_db()
+    opcion = 0
+    while opcion != 7:
+        print("\nMenú Principal")
+        print("1 - Consultar todos los artistas")
+        print("2 - Consultar artistas por nombre")
+        print("3 - Consultar los 5 primeros álbumes por nombre del artista")
+        print("4 - Añadir un artista")
+        print("5 - Modificar el nombre de un artista")
+        print("6 - Borrar un artista")
+        print("7 - Salir")
+
+        try:
+            opcion = int(input("Selecciona una opción: "))
+        except ValueError:
+            print("Opción no válida, introduce un número")
+            continue
+
+        if opcion == 1:
+            consultar_todos_artistas(conn)
+        elif opcion == 2:
+            consultar_artistas_por_nombre(conn)
+        elif opcion == 3:
+            consultar_albumes_por_artista(conn)
+        elif opcion == 4:
+            afegir_artista(conn)
+        elif opcion == 5:
+            modificar_artista(conn)
+        elif opcion == 6:
+            borrar_artista(conn)
+        elif opcion == 7:
+            print("Programa finalizado")
+        else:
+            print("Opción no válida, añade una opción correcta")
+
+# Ejecutar programa
+if __name__ == "__main__":
+    menu()
